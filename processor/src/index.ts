@@ -39,9 +39,10 @@ async function main() {
         await producer.disconnect();
     }
 }
-
 main().catch((err) => {
     console.error("Processor crashed:", err);
     process.exit(1);
 });
-main()
+// Start the processor (single invocation)
+// main() was previously invoked twice which could cause the process to run twice.
+// We keep a single invocation with a catch handler above.
