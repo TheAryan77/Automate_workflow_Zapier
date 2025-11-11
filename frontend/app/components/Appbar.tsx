@@ -15,22 +15,23 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex-shrink-0 text-2xl font-bold text-orange-500">
-            <div ><span className="text-black">_</span>Mapier<span className="text-black">_</span></div>
+            <div className="font-bold"><span className="text-black">_</span>Mapier<span className="text-black text-sm"> by <span className="font-bold border-b-black border-b-2 text-orange-500">Aryan</span></span></div>
           </div>
           <div className="hidden md:flex space-x-8 items-center">
-            <div  className="text-gray-700 hover:text-orange-500 cursor-pointer">
+            <div onClick={()=>{
+                Router.push("/")
+            }}  className="text-gray-700 hover:text-orange-500 cursor-pointer">
               Home
             </div>
-            <div onAbort={()=>{
+            <div onClick={()=>{
                 Router.push("/dashboard")
             }} className="text-gray-700 hover:text-orange-500 cursor-pointer">
               Dashboard
             </div>
-            <div className="text-gray-700 hover:text-orange-500 cursor-pointer" >
-              Pricing
-            </div>
-            <div  className="text-gray-700 hover:text-orange-500    cursor-pointer">
-              Contact
+            <div onClick={()=>{
+                Router.push("/zap")
+            }} className="text-gray-700 hover:text-orange-500 cursor-pointer" >
+              Zap
             </div>
             <button onClick={()=>{
                 Router.push("/signup")

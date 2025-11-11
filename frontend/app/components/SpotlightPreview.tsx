@@ -15,12 +15,12 @@ export default function BackgroundLinesDemo() {
         transition={{ duration: 0.8 }}
       >
         <h2 className="flex flex-wrap justify-center items-center gap-3 text-xl sm:text-6xl lg:text-8xl font-extrabold font-sans bg-clip-text text-transparent bg-gradient-to-b from-neutral-900 to-neutral-700 dark:from-neutral-600 dark:to-white leading-tight">
-          <span className="text-gray-700 dark:text-white ">
+          <span className="text-gray-700 tracking-tight  dark:text-white ">
             Automate Your
           </span>
           <LayoutTextFlip
             words={[
-              "Workflow",
+              "Workflows",
               "Github",
               "Gmail",
               "Notion",
@@ -39,12 +39,10 @@ export default function BackgroundLinesDemo() {
       </p>
 
       {/* Capsule Button */}
-      <Link
-        href="/get-started"
-        className="mt-8 inline-block rounded-full bg-orange-500 px-8 py-3 text-white text-lg font-medium shadow-xl hover:bg-orange-600 transition-all duration-300 hover:scale-105"
-      >
-        Create Zap ⚡
-      </Link>
+      <button className="mt-8 px-8 py-3 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 text-white text-lg font-semibold shadow-[0_4px_20px_rgba(255,165,0,0.4)] hover:scale-105 hover:shadow-[0_6px_30px_rgba(255,165,0,0.6)] transition-all duration-300">
+  Create Zap ⚡
+</button>
+
     </BackgroundLines>
   );
 }
