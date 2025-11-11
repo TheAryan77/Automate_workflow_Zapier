@@ -1,3 +1,198 @@
-# Automate_workflow_Zapier
-hey there is the readme file for my new project, building this up! :)
-got a change there tooo!! 
+## Automate Workflow (Zapier-like) Monorepo
+
+A small Zapier-like system built as a monorepo with four apps:
+- hooks: public HTTP webhook receiver that writes Zap runs and an outbox to Postgres via Prisma
+- processor: background worker that reads the outbox and publishes events to Kafka
+- primary_backend: Express API for app features (users, zaps, auth middleware, etc.)
+- frontend: Next.js app (App Router) with Tailwind v4 and shadcn/ui components
+
+This README documents the architecture, setup, environment, and how to run each service locally.
+
+## Repository structure
+
+Zapier/
+- hooks/
+	- src/index.ts — Express webhook receiver
+	- prisma/schema.prisma — Prisma models and relations
+	- tsconfig.json
+	- package.json
+- processor/
+	- src/index.ts — Kafka producer pulling from outbox table
+	- prisma/schema.prisma — Prisma models (kept in sync with hooks)
+	- tsconfig.json
+	- package.json
+- primary_backend/
+	- src/index.ts — Express app entry
+	- src/middleware.ts — example auth middleware
+	- tsconfig.json
+	- package.json
+- frontend/
+	- Next.js 16 (app router) + Tailwind 4 + shadcn/ui components
+	- package.json
+- README.md — this file
+- .env — environment (DATABASE_URL, Kafka, etc.)
+
+Note: The Prisma schemas in `hooks` and `processor` are identical so the same database can be used across both services.
+
+## Tech stack
+
+- TypeScript across all packages
+- Node.js + Express (hooks, primary_backend)
+- Prisma ORM + PostgreSQL
+- Kafka (kafkajs client) for event transport
+- Next.js 16 + React 19, Tailwind v4, motion, shadcn/ui (frontend)
+
+## Data model (Prisma)
+
+Key entities (defined in `hooks/prisma/schema.prisma` and mirrored in `processor/prisma/schema.prisma`):
+- User: basic user entity
+- Zap: a workflow definition that has triggers and actions
+- Trigger and Action: connect a Zap to AvailableTrigger/AvailableAction
+- ZapRun: an instance of executing a Zap with metadata payload
+- ZapRunOutbox: an outbox entry for a ZapRun used by the processor
+
+Outbox pattern: `hooks` inserts into `ZapRunOutbox`; `processor` continuously reads and publishes to Kafka.
+
+## Prerequisites
+
+- Node.js 18+ (recommended) and npm
+- PostgreSQL reachable via `DATABASE_URL`
+- Kafka broker (local at `localhost:9092` by default)
+
+Optional: Docker or Homebrew to run Postgres/Kafka locally.
+
+## Environment variables
+
+Create `Zapier/.env` (root) for shared configuration (or place `.env` inside each package if you prefer). At a minimum:
+
+```
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/zapier_db?schema=public"
+
+# Kafka (if you want to override defaults)
+KAFKA_BROKERS="localhost:9092"
+KAFKA_CLIENT_ID="my-app"
+KAFKA_TOPIC="zap-event"
+```
+
+The Prisma CLI will use `DATABASE_URL` for migrations and client generation. If you keep `.env` at the monorepo root, pass `--dotenv=../.env` from a package when using CLI, or configure your shell so `DATABASE_URL` is in the environment.
+
+## Database: migrate and generate Prisma Client
+
+Prisma Client is configured to generate into `../src/generated/prisma` in both `hooks` and `processor` schemas (custom output path). That means TypeScript should import the client like:
+
+```
+// hooks/src/index.ts
+import { PrismaClient } from "./generated/prisma";
+```
+
+If your code imports from `@prisma/client`, either:
+- change imports to the generated path, or
+- remove the `output = "../src/generated/prisma"` line from the generator block and re-generate (so default `@prisma/client` is produced).
+
+Run migrations + generate per service (example for hooks):
+
+```bash
+# from repo root
+cd hooks
+npx prisma migrate dev --schema=prisma/schema.prisma --name init
+npx prisma generate --schema=prisma/schema.prisma
+```
+
+Repeat for `processor` if needed. Ensure both services point to the same `DATABASE_URL` if they share the database.
+
+## Kafka setup (local)
+
+The processor expects Kafka at `localhost:9092` and publishes to the `zap-event` topic. Create the topic if needed:
+
+```bash
+# example (Confluent or Apache Kafka CLI)
+kafka-topics --bootstrap-server localhost:9092 --create --topic zap-event --partitions 1 --replication-factor 1
+```
+
+You can also use Docker Compose for Kafka; feel free to add a compose file later.
+
+## Running each service
+
+Install dependencies per package first:
+
+```bash
+cd hooks && npm install
+cd ../processor && npm install
+cd ../primary_backend && npm install
+cd ../frontend && npm install
+```
+
+Then, in separate terminals:
+
+Hooks (webhook receiver)
+```bash
+cd hooks
+# build+run (outputs to dist)
+npm run start
+# Service listens on http://localhost:3000
+```
+
+Processor (outbox -> Kafka)
+```bash
+cd processor
+npm run build && npm run start
+```
+
+Primary backend (API)
+```bash
+cd primary_backend
+npm run dev
+# If needed, ensure dist/index.js is generated by tsc -b
+```
+
+Frontend (Next.js)
+```bash
+cd frontend
+npm run dev
+# Opens at http://localhost:3000 unless port conflicts (hooks also uses 3000). Set NEXT_PORT or change hooks port.
+```
+
+Note: Hooks and frontend both default to port 3000. Change one of them (e.g., `hooks` to 3001) or set `PORT` for Next.
+
+## API overview
+
+Hooks
+- POST `/hooks/catch/:userId/:zapId`
+	- Body: arbitrary JSON payload stored as `metadata` on `ZapRun`
+	- Side-effect: inserts an outbox row in `ZapRunOutbox`
+
+Processor
+- Polls `ZapRunOutbox` every second, batches up to 10 rows, and publishes Kafka messages to `zap-event` with `{ zapRunId }` payloads.
+
+Primary backend
+- Express app for user/zap routes (implementation in `src/router/**`, not fully documented here).
+- Includes `authMiddleware` scaffold in `src/middleware.ts`.
+
+Frontend
+- Next.js app using Tailwind v4 and shadcn/ui.
+- Components such as `BackgroundLines`, `SectionCards`, `DataTable`, `AppSidebar`, `SiteHeader`, etc.
+
+## Development tips
+
+- Type checking
+	- Processor: `npm run typecheck`
+	- Frontend: `npm run lint` (and Next’s type checks on build)
+
+- Prisma troubleshooting
+	- If `@prisma/client` cannot be imported but your schema sets a custom `output`, import from the generated path instead: `import { PrismaClient } from "./generated/prisma"`.
+	- If CLI can’t find `.env`, pass `--dotenv` pointing to your actual env file or export `DATABASE_URL` in your shell.
+
+- Kafka troubleshooting
+	- Verify broker is reachable on `localhost:9092`.
+	- Ensure the `zap-event` topic exists.
+
+## Roadmap / next steps
+
+- Add Docker Compose for Postgres + Kafka to simplify local setup
+- Add seed scripts and prisma migrations pipeline
+- Add tests for hooks and processor
+- Add CI (type check, build) per package
+
+## License
+
+ISC — see `LICENSE`.
