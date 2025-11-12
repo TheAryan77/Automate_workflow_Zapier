@@ -6,6 +6,7 @@ import { CanvasRevealEffectDemo } from "./CanvasRevealEffectDemo";
 const CardSection = () => {
   return (
     <div className="min-h-screen w-full flex items-center justify-center">
+      <h2></h2>
       <CanvasRevealEffectDemo />
     </div>
   );

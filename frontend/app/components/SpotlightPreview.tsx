@@ -21,10 +21,13 @@ export default function BackgroundLinesDemo() {
           <LayoutTextFlip
             words={[
               "Workflows",
-              "Github",
-              "Gmail",
               "Notion",
-              "Sheets",
+  "Google Sheets",
+  "Google Docs",
+  "Gmail",
+  "GitHub",
+  "Slack",
+  "Google Calendar"
             ]}
             className="text-orange-500 font-extrabold"
           />
@@ -38,10 +41,6 @@ export default function BackgroundLinesDemo() {
         and let your ideas work for you — all without writing a single line of code.
       </p>
 
-      {/* Capsule Button */}
-      <button className="mt-8 px-8 py-3 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 text-white text-lg font-semibold shadow-[0_4px_20px_rgba(255,165,0,0.4)] hover:scale-105 hover:shadow-[0_6px_30px_rgba(255,165,0,0.6)] transition-all duration-300">
-  Create Zap ⚡
-</button>
 
     </BackgroundLines>
   );
